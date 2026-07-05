@@ -1,0 +1,14 @@
+slug: ssl-certificate-docker-issues
+title: SSL Certificate Docker Doctor
+tagline: Docker コンテナの SSL 証明書エラーを診断し、直し方まで教える
+probe_type: B
+status: live
+created: 2026-07-05
+pain_source:
+  repo: kaionn/pain-collector
+  issue: 223
+  source_url: https://stackoverflow.com/questions/67375695/docker-image-error-the-remote-certificate-is-invalid-according-to-the-validation
+price_hypothesis: "無料 + Pro 月額500円（CI 連携・複数コンテナの継続監視）"
+cta: waitlist
+distribution: []
+verdict_log: []
