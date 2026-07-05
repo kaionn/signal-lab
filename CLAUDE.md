@@ -17,6 +17,8 @@
 3. PR を出す。merge = 公開（Vercel 自動デプロイ）
 4. 公開後、出典コミュニティに投げ返し、meta.yaml の distribution に記録する
 
+pain-collector の Issue から `/probe` コマンドでも自動生成される（probe-request.yml → PR）。merge 判断は人間が行う
+
 ## 規約
 
 - meta.yaml のスキーマは lib/experiments.ts の zod が唯一の正。スキーマ変更は _template と同時に
