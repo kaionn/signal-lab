@@ -1,0 +1,37 @@
+name: Weekly Digest
+
+on:
+  schedule:
+    - cron: "0 11 * * 0"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Discord 送信 / Issue 起票をせず判定結果のみ出力する"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: yarn
+
+      - run: yarn install --frozen-lockfile
+
+      - run: node scripts/weekly-digest.mjs ${{ inputs.dry_run && '--dry-run' || '' }}
+        env:
+          KV_REST_API_URL: ${{ secrets.KV_REST_API_URL }}
+          KV_REST_API_TOKEN: ${{ secrets.KV_REST_API_TOKEN }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
+          POSTHOG_PROJECT_ID: ${{ secrets.POSTHOG_PROJECT_ID }}
+          GH_TOKEN: ${{ github.token }}

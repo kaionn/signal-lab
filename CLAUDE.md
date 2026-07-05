@@ -7,7 +7,7 @@
 - Probe A = 動くマイクロツール（1〜3 日で作れる案）。ツール自体が集客し、利用数・再訪 + Pro CTA を計測する
 - Probe B = LP + 待機リスト（それ以上の規模、iOS 案は TestFlight 待機リスト）
 - 集客していない Probe は KILL 判定しない。公開したら出典コミュニティへの投げ返しを distribution に記録する
-- 判定は週次ダイジェスト（KILL / WATCH / GRADUATE、閾値は config/verdict-rules.yaml）
+- 判定は週次ダイジェスト（KILL / WATCH / GRADUATE、閾値は config/verdict-rules.yaml）。実装は `scripts/weekly-digest.mjs`（`--dry-run` で Discord 送信 / Issue 起票なしの確認が可能）
 - GRADUATE した Web 案は app/app/{slug}/ に本実装。モバイル案は独立 repo に切り出し、待機リストへ TestFlight 招待
 
 ## Probe の追加手順
@@ -31,4 +31,5 @@
 |---|---|---|
 | NEXT_PUBLIC_POSTHOG_KEY / NEXT_PUBLIC_POSTHOG_HOST | 計測 | 計測が無音で無効化 |
 | UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN（または KV_REST_API_URL / KV_REST_API_TOKEN。Vercel Marketplace 統合は KV_* 名で注入） | 待機リスト保存 + レート制限 | /api/signup が 503 |
-| DISCORD_WEBHOOK_URL | 登録の即時通知 | 通知なしで登録は成功 |
+| DISCORD_WEBHOOK_URL | 登録の即時通知 + 週次ダイジェスト配信 | 通知なしで登録は成功 / ダイジェストは送信失敗で exit 1 |
+| POSTHOG_API_KEY / POSTHOG_PROJECT_ID（GitHub Secrets、週次ダイジェスト用） | PostHog Query API での行動イベント集計 | 「計測: 未接続」警告を出して続行 |
