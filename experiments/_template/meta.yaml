@@ -1,0 +1,14 @@
+slug: my-probe
+title: My Probe
+tagline: 一行で価値を説明する
+probe_type: B          # A = 動くマイクロツール / B = LP + 待機リスト
+status: draft          # draft / live / killed / graduated
+created: 2026-07-05
+pain_source:
+  repo: kaionn/pain-collector
+  issue: 0
+  source_url: null     # 出典コミュニティ URL（集客の投げ返し先）
+price_hypothesis: "月額300円"
+cta: waitlist          # waitlist / preorder / pro_interest
+distribution: []       # 集客アクション実施ログ。空のままだと週次ダイジェストで「未集客」警告
+verdict_log: []
