@@ -1,0 +1,14 @@
+slug: subtracker
+title: SubTracker
+tagline: サブスクの「解約したのに請求」を見張る iOS アプリ
+probe_type: B
+status: live
+created: 2026-07-05
+pain_source:
+  repo: kaionn/pain-collector
+  issue: 104
+  source_url: https://apps.apple.com/app/id1058959277
+price_hypothesis: "無料 + Pro 月額300円"
+cta: waitlist
+distribution: []
+verdict_log: []
