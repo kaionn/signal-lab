@@ -21,5 +21,6 @@
 
 - meta.yaml のスキーマは lib/experiments.ts の zod が唯一の正。スキーマ変更は _template と同時に
 - 計測イベントは pageview / cta_click / signup / tool_use の 4 種のみ。全イベントに slug property を付ける
+- 計測は lib/track.ts の track() 経由のみ。posthog.capture を直接呼ばない
 - Probe 段階で決済実装はしない（preorder は MoR の Payment Link を貼るだけ）
 - validation: `yarn lint && yarn build`
