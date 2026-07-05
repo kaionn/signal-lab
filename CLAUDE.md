@@ -24,3 +24,11 @@
 - 計測は lib/track.ts の track() 経由のみ。posthog.capture を直接呼ばない
 - Probe 段階で決済実装はしない（preorder は MoR の Payment Link を貼るだけ）
 - validation: `yarn lint && yarn build`
+
+## 必要な環境変数
+
+| 変数 | 用途 | 未設定時 |
+|---|---|---|
+| NEXT_PUBLIC_POSTHOG_KEY / NEXT_PUBLIC_POSTHOG_HOST | 計測 | 計測が無音で無効化 |
+| UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN | 待機リスト保存 + レート制限 | /api/signup が 503 |
+| DISCORD_WEBHOOK_URL | 登録の即時通知 | 通知なしで登録は成功 |
