@@ -9,7 +9,7 @@ const DRY_RUN = process.argv.includes("--dry-run");
 const FORCE = process.argv.includes("--force");
 const SLUG = process.argv[2];
 const LP_BASE_URL = "https://signal-lab-six.vercel.app/p";
-const CLAUDE_TIMEOUT_MS = 60_000;
+const CLAUDE_TIMEOUT_MS = 120_000;
 
 if (!SLUG || SLUG.startsWith("--")) {
   console.error("使い方: node scripts/post-draft.mjs <slug> [--dry-run]");
@@ -41,7 +41,7 @@ function fallbackDraft(meta) {
 }
 
 function generateDraft(meta, lpUrl) {
-  const prompt = `以下の Probe（検証 LP）の X 投稿本文を 1 案作成して。
+  const prompt = `以下の Probe（検証 LP）の X 投稿を「本文」と「リプ用補足」の 2 部構成（スレッド形式）で作成して。
 
 - title: ${meta.title}
 - tagline: ${meta.tagline}
@@ -50,35 +50,52 @@ function generateDraft(meta, lpUrl) {
 - probe_type: ${meta.probe_type}
 - LP URL: ${lpUrl}
 
-## 指示
+## 本文の指示
 
 - 日本語、全角 130 字以内
 - URL は別途付加するので本文に含めない
 - キャッチーに。1 行目は目を引くフック（悩みへの共感 or 意外性）から入る
 - 絵文字を 2〜4 個使う（行頭の箇条書きマーカーや強調に。乱発はしない）。事実の誇張・嘘は禁止
 - 個人開発者が「作った」と語る一人称視点
-- 出力はプレーンテキストの本文のみ（前置き・後書き・引用符・コードブロック不要）`;
+
+## リプ用補足の指示
+
+- 本文にセルフリプでぶら下げる補足。全角 140 字以内、絵文字 1〜2 個
+- 本文と重複しない具体を書く（使い方の流れ・プライバシーやデータの扱い・価格の背景・想定ユースケースなど）
+- URL は含めない
+
+## 出力形式
+
+本文と補足を、単独行の「---」で区切ったプレーンテキストのみ（前置き・後書き・引用符・コードブロック不要）`;
 
   const output = execFileSync(
     "claude",
     ["-p", prompt, "--output-format", "text"],
     { encoding: "utf-8", timeout: CLAUDE_TIMEOUT_MS },
   );
-  const draft = output.trim();
-  if (draft === "") {
+  const trimmed = output.trim();
+  if (trimmed === "") {
     throw new Error("claude が空の出力を返した");
   }
-  return draft;
+  const [main, ...rest] = trimmed.split(/^---$/m);
+  const draft = main.trim();
+  if (draft === "") {
+    throw new Error("claude の出力から本文を抽出できなかった");
+  }
+  const reply = rest.join("\n").trim();
+  return { draft, reply: reply === "" ? null : reply };
 }
 
-async function sendDiscord(meta, slug, body, screenshotPath) {
+async function sendDiscord(meta, slug, body, reply, screenshotPath) {
   const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
   if (!webhookUrl) {
     console.error("DISCORD_WEBHOOK_URL が未設定");
     process.exit(1);
   }
 
-  const headerContent = `📣 ${meta.title}（${slug}）が公開されたわ。X 投稿ドラフト↓（次のメッセージをそのままコピペ + 画像添付）`;
+  const headerContent = reply
+    ? `📣 ${meta.title}（${slug}）が公開されたわ。X 投稿ドラフト↓（次のメッセージ = 本文 + 画像添付、その次 = セルフリプ用の補足）`
+    : `📣 ${meta.title}（${slug}）が公開されたわ。X 投稿ドラフト↓（次のメッセージをそのままコピペ + 画像添付）`;
 
   const hasScreenshot = screenshotPath !== null && fs.existsSync(screenshotPath);
   let headerResponse;
@@ -108,6 +125,18 @@ async function sendDiscord(meta, slug, body, screenshotPath) {
   if (!bodyResponse.ok) {
     throw new Error(`discord webhook failed (body): status=${bodyResponse.status}`);
   }
+
+  if (reply) {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const replyResponse = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ content: reply }),
+    });
+    if (!replyResponse.ok) {
+      throw new Error(`discord webhook failed (reply): status=${replyResponse.status}`);
+    }
+  }
 }
 
 async function main() {
@@ -127,8 +156,9 @@ async function main() {
   const lpUrl = `${LP_BASE_URL}/${SLUG}`;
 
   let draft;
+  let reply = null;
   try {
-    draft = generateDraft(meta, lpUrl);
+    ({ draft, reply } = generateDraft(meta, lpUrl));
   } catch (error) {
     console.warn(`警告: claude での生成に失敗（${error.message}）。フォールバック文を使用する`);
     draft = fallbackDraft(meta);
@@ -138,12 +168,16 @@ async function main() {
 
   if (DRY_RUN) {
     console.log(body);
+    if (reply) {
+      console.log("\n--- リプ用補足 ---");
+      console.log(reply);
+    }
     return;
   }
 
   const screenshotPath = `/tmp/probe-shot-${SLUG}.png`;
   try {
-    await sendDiscord(meta, SLUG, body, screenshotPath);
+    await sendDiscord(meta, SLUG, body, reply, screenshotPath);
   } catch (error) {
     console.error(`Discord 送信失敗: ${error.message}`);
     process.exitCode = 1;
