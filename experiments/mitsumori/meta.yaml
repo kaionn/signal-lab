@@ -1,0 +1,12 @@
+slug: mitsumori
+title: 見積モリ
+tagline: 工数と単価を入れるだけ。見積書 PDF が 30 秒で完成
+probe_type: A
+status: live
+created: 2026-07-05
+pain_source:
+  repo: kaionn/lazy-product-lab
+price_hypothesis: "無料 + Pro 月額500円（テンプレ保存・ロゴ・自動採番）"
+cta: pro_interest
+distribution: []
+verdict_log: []
