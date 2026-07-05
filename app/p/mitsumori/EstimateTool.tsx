@@ -85,11 +85,27 @@ function createDefaultState(): EstimateState {
   };
 }
 
+function createDemoState(): EstimateState {
+  return {
+    ...createDefaultState(),
+    issuerName: "山田デザイン事務所",
+    clientName: "株式会社サンプル商事",
+    items: [
+      { id: createId(), name: "コーポレートサイト デザイン制作", quantity: 1, unit: "式", unitPrice: 150000 },
+      { id: createId(), name: "フロントエンド実装", quantity: 5, unit: "人日", unitPrice: 60000 },
+    ],
+  };
+}
+
 function isEstimateState(value: unknown): value is EstimateState {
   return typeof value === "object" && value !== null && Array.isArray((value as EstimateState).items);
 }
 
 function loadState(): EstimateState {
+  // ?demo=1 はスクショ・紹介用のサンプル表示（保存はしない）
+  if (new URLSearchParams(window.location.search).get("demo") === "1") {
+    return createDemoState();
+  }
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) {
@@ -119,6 +135,10 @@ export function EstimateTool() {
 
   useEffect(() => {
     if (!hydrated) {
+      return;
+    }
+    // demo 表示は利用者の保存データを上書きしない
+    if (new URLSearchParams(window.location.search).get("demo") === "1") {
       return;
     }
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));

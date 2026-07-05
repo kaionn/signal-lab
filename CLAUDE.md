@@ -27,6 +27,7 @@ pain-collector の Issue から `/probe` コマンドでも自動生成される
 - 計測イベントは pageview / cta_click / signup / tool_use の 4 種のみ。全イベントに slug property を付ける
 - 計測は lib/track.ts の track() 経由のみ。posthog.capture を直接呼ばない
 - Probe 段階で決済実装はしない（preorder は MoR の Payment Link を貼るだけ）
+- Probe A（ツール型）は `?demo=1` でサンプルデータ入り表示に対応する（自動スクショ・紹介用に操作感が伝わる画を出すため。demo 表示は localStorage に保存しない）
 - validation: `yarn lint && yarn build`
 
 ## 必要な環境変数
