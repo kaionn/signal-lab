@@ -30,5 +30,5 @@
 | 変数 | 用途 | 未設定時 |
 |---|---|---|
 | NEXT_PUBLIC_POSTHOG_KEY / NEXT_PUBLIC_POSTHOG_HOST | 計測 | 計測が無音で無効化 |
-| UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN | 待機リスト保存 + レート制限 | /api/signup が 503 |
+| UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN（または KV_REST_API_URL / KV_REST_API_TOKEN。Vercel Marketplace 統合は KV_* 名で注入） | 待機リスト保存 + レート制限 | /api/signup が 503 |
 | DISCORD_WEBHOOK_URL | 登録の即時通知 | 通知なしで登録は成功 |
