@@ -18,15 +18,29 @@ function loadLiveExperiments() {
     return [];
   }
 
-  return fs
+  const results = [];
+  const dirs = fs
     .readdirSync(EXPERIMENTS_DIR, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && !entry.name.startsWith("_"))
-    .map((entry) => {
-      const metaPath = path.join(EXPERIMENTS_DIR, entry.name, "meta.yaml");
-      const meta = parse(fs.readFileSync(metaPath, "utf-8"));
-      return { ...meta, _dir: entry.name, _metaPath: metaPath };
-    })
-    .filter((meta) => meta.status === "live");
+    .filter((entry) => entry.isDirectory() && !entry.name.startsWith("_"));
+
+  for (const entry of dirs) {
+    const metaPath = path.join(EXPERIMENTS_DIR, entry.name, "meta.yaml");
+    try {
+      const raw = fs.readFileSync(metaPath, "utf-8");
+      const meta = parse(raw);
+      if (meta == null || typeof meta !== "object") {
+        warnings.push(`meta.yaml 読み込み失敗 (${entry.name}): 有効な YAML オブジェクトではありません`);
+        continue;
+      }
+      if (meta.status === "live") {
+        results.push({ ...meta, _dir: entry.name, _metaPath: metaPath });
+      }
+    } catch (error) {
+      warnings.push(`meta.yaml 読み込み失敗 (${entry.name}): ${error.message}`);
+    }
+  }
+
+  return results;
 }
 
 function loadRules() {
