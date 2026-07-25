@@ -38,3 +38,5 @@ pain-collector の Issue から `/probe` コマンドでも自動生成される
 | UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN（または KV_REST_API_URL / KV_REST_API_TOKEN。Vercel Marketplace 統合は KV_* 名で注入） | 待機リスト保存 + レート制限 | /api/signup が 503 |
 | DISCORD_WEBHOOK_URL | 登録の即時通知 + 週次ダイジェスト配信 | 通知なしで登録は成功 / ダイジェストは送信失敗で exit 1 |
 | POSTHOG_API_KEY / POSTHOG_PROJECT_ID（GitHub Secrets、週次ダイジェスト用） | PostHog Query API での行動イベント集計 | 「計測: 未接続」警告を出して続行 |
+
+pain-collector 側の PAT（fine-grained）が signal-lab の workflow（probe-request.yml）を dispatch する構成のため、その PAT には `Actions: Read and write` + Repository access に signal-lab を含める。**PAT ローテート時に signal-lab を対象から外すと `/probe` 連携が落ちる**（pain-collector 側だけ更新して壊れやすい）。
