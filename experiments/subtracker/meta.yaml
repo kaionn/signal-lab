@@ -2,7 +2,7 @@ slug: subtracker
 title: SubTracker
 tagline: サブスクの「解約したのに請求」を見張る iOS アプリ
 probe_type: B
-status: live
+status: killed
 created: 2026-07-05
 pain_source:
   repo: kaionn/pain-collector
@@ -11,4 +11,10 @@ pain_source:
 price_hypothesis: "無料 + Pro 月額300円"
 cta: waitlist
 distribution: []
-verdict_log: []
+verdict_log:
+  - date: 2026-07-25
+    verdict: KILL
+    reason: >-
+      集客前の撤退判断。出典が App Store レビュー（Uber Eats）で投げ返し先のコミュニティが存在せず、
+      pain-collector #104 の市場シグナルが「競合が強い」（Rocket Money / Cancel Subscriptions / Bobby）。
+      待機リスト 10 件の閾値に対して集客コストが見合わないと判断した

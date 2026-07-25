@@ -165,12 +165,26 @@ async function fetchPostHogStats(slugs) {
   return { eventCounts, returningUsers, available: true };
 }
 
-function ageDaysOf(created) {
-  return Math.floor((Date.now() - new Date(created).getTime()) / DAY_MS);
+function daysSince(date) {
+  const days = Math.floor((Date.now() - new Date(date).getTime()) / DAY_MS);
+  return Number.isFinite(days) ? days : null;
+}
+
+// 集客（distribution）の初回日。KILL の観測期間はここを起点にする。
+// created 起点にすると、公開から集客までの遅れがそのまま観測期間を食い、
+// 投げ返した翌日に KILL が出るため。
+function firstDistributionDay(meta) {
+  const dates = (meta.distribution ?? []).map((entry) => entry?.date).filter(Boolean);
+  if (dates.length === 0) {
+    return null;
+  }
+  return daysSince([...dates].sort()[0]);
 }
 
 function judge(meta, rules, waitlistCount, events, returningUsers, postHogAvailable) {
-  const ageDays = ageDaysOf(meta.created);
+  const ageDays = daysSince(meta.created);
+  const distributedDays = firstDistributionDay(meta);
+  const observedDays = distributedDays ?? ageDays;
   const distributed = (meta.distribution ?? []).length > 0;
   const weeklyToolUse = events?.tool_use ?? 0;
   const signals = (waitlistCount ?? 0) + weeklyToolUse;
@@ -189,13 +203,18 @@ function judge(meta, rules, waitlistCount, events, returningUsers, postHogAvaila
     verdict = "GRADUATE";
   } else if (
     (!rules.kill.requires_distribution || distributed) &&
-    ageDays >= rules.kill.min_age_days &&
+    observedDays !== null &&
+    observedDays >= rules.kill.min_age_days &&
     signals < rules.kill.max_signals
   ) {
     verdict = "KILL";
   }
 
-  return { verdict, ageDays, distributed, weeklyToolUse, signals };
+  if (ageDays === null) {
+    warnings.push(`created が日付として解釈できません (${meta.slug}): ${meta.created}`);
+  }
+
+  return { verdict, ageDays, observedDays, distributed, weeklyToolUse, signals };
 }
 
 const VERDICT_EMOJI = { GRADUATE: "🎓", KILL: "💀", WATCH: "👀" };
@@ -210,9 +229,11 @@ function buildField(meta, judgement, waitlistCount, events, postHogAvailable) {
     `${VERDICT_EMOJI[judgement.verdict]} ${judgement.verdict}`,
     `待機リスト ${waitlistDisplay}`,
     `7日: ${eventsDisplay}`,
-    `経過 ${judgement.ageDays} 日`,
+    `経過 ${judgement.ageDays ?? "n/a"} 日`,
   ];
-  if (!judgement.distributed) {
+  if (judgement.distributed) {
+    lines.push(`集客から ${judgement.observedDays ?? "n/a"} 日`);
+  } else {
     lines.push("⚠️ 未集客");
   }
 
@@ -288,7 +309,7 @@ function createGraduateIssue(meta, judgement, waitlistCount) {
 
 - 待機リスト累計: ${waitlistCount === null ? "n/a" : waitlistCount}
 - 直近 7 日 tool_use: ${judgement.weeklyToolUse}
-- 経過日数: ${judgement.ageDays}
+- 経過日数: ${judgement.ageDays ?? "n/a"}
 
 ## 次のアクション
 

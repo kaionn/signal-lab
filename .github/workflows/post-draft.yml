@@ -65,6 +65,16 @@ jobs:
           set -euo pipefail
           for SLUG in $SLUGS; do
             echo "::group::$SLUG"
+
+            # live 以外（killed / draft / graduated）は post-draft.mjs でも skip されるが、
+            # そこへ到達する前のデプロイ待ち最大 5 分と playwright インストールが空振りするため先に落とす
+            STATUS=$(SLUG="$SLUG" node -p "require('yaml').parse(require('fs').readFileSync('experiments/' + process.env.SLUG + '/meta.yaml', 'utf-8'))?.status ?? ''" 2>/dev/null || echo "")
+            if [ "$STATUS" != "live" ]; then
+              echo "skip $SLUG (status=${STATUS:-unreadable})"
+              echo "::endgroup::"
+              continue
+            fi
+
             URL="https://signal-lab-six.vercel.app/p/$SLUG"
             SCREENSHOT="/tmp/probe-shot-$SLUG.png"
 
