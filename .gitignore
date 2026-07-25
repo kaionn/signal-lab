@@ -43,3 +43,6 @@ next-env.d.ts
 
 # Claude Code runtime state
 .claude/state/
+
+# Claude Code 実行時 state
+.harness-mem/
