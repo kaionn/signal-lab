@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import fs from "node:fs";
-import { mirrorSlack } from "./notify-slack.mjs";
+import { mirrorSlack, shouldSendDiscord, acknowledgeDiscord } from "./notify-slack.mjs";
 import path from "node:path";
 import { judge } from "./verdict.mjs";
 import { execFileSync } from "node:child_process";
@@ -221,7 +221,8 @@ function buildEmbed(experiments, judgements, rules) {
 }
 
 async function sendToDiscord(embed) {
-  mirrorSlack({ embeds: [embed] }, { event: "weekly-digest" });
+  const slackResult = mirrorSlack({ embeds: [embed] }, { event: "weekly-digest" });
+  if (!shouldSendDiscord(slackResult)) return;
   const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
   if (!webhookUrl) {
     throw new Error("DISCORD_WEBHOOK_URL が未設定");
@@ -233,6 +234,7 @@ async function sendToDiscord(embed) {
     body: JSON.stringify({ embeds: [embed] }),
   });
 
+  acknowledgeDiscord(response.status, slackResult);
   if (!response.ok) {
     throw new Error(`discord webhook failed: status=${response.status}`);
   }
