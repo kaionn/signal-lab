@@ -14,6 +14,12 @@ permissions:
   contents: read
   issues: write
 
+# Safe default retains Discord. Enable only after bot installation and channel verification.
+env:
+  NOTIFICATION_MODE: ${{ vars.NOTIFICATION_MODE || 'discord' }}
+  SLACK_ALERT_CHANNEL_ID: ${{ vars.SLACK_ALERT_CHANNEL_ID }}
+  SLACK_REPORT_CHANNEL_ID: ${{ vars.SLACK_REPORT_CHANNEL_ID }}
+
 jobs:
   digest:
     runs-on: ubuntu-latest
@@ -29,9 +35,20 @@ jobs:
 
       - run: node scripts/weekly-digest.mjs ${{ inputs.dry_run && '--dry-run' || '' }}
         env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           KV_REST_API_URL: ${{ secrets.KV_REST_API_URL }}
           KV_REST_API_TOKEN: ${{ secrets.KV_REST_API_TOKEN }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           POSTHOG_PROJECT_ID: ${{ secrets.POSTHOG_PROJECT_ID }}
           GH_TOKEN: ${{ github.token }}
+
+      - name: Preserve Slack shadow delivery receipts
+        if: ${{ always() && vars.NOTIFICATION_MODE == 'shadow' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: slack-delivery-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}
+          path: .notification-state/*.json
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 14

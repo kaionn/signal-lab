@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import fs from "node:fs";
+import { mirrorSlack } from "./notify-slack.mjs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { parse } from "yaml";
@@ -265,6 +266,7 @@ function buildEmbed(experiments, judgements, rules) {
 }
 
 async function sendToDiscord(embed) {
+  mirrorSlack({ embeds: [embed] }, { event: "weekly-digest" });
   const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
   if (!webhookUrl) {
     throw new Error("DISCORD_WEBHOOK_URL が未設定");

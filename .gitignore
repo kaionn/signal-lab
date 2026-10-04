@@ -46,3 +46,6 @@ next-env.d.ts
 
 # Claude Code 実行時 state
 .harness-mem/
+
+# Ephemeral Slack shadow receipts (uploaded separately by Actions)
+.notification-state/

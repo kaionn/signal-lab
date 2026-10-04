@@ -20,6 +20,12 @@ permissions:
   contents: write
   pull-requests: write
 
+# Safe default retains Discord. Enable only after bot installation and channel verification.
+env:
+  NOTIFICATION_MODE: ${{ vars.NOTIFICATION_MODE || 'discord' }}
+  SLACK_ALERT_CHANNEL_ID: ${{ vars.SLACK_ALERT_CHANNEL_ID }}
+  SLACK_REPORT_CHANNEL_ID: ${{ vars.SLACK_REPORT_CHANNEL_ID }}
+
 jobs:
   probe:
     if: github.actor == 'kaionn'
@@ -218,6 +224,7 @@ jobs:
       - name: Notify Discord (success)
         if: steps.push-pr.outputs.pr_url != ''
         env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           SLUG: ${{ steps.payload.outputs.slug }}
           PR_URL: ${{ steps.push-pr.outputs.pr_url }}
@@ -228,6 +235,7 @@ jobs:
             exit 0
           fi
           MESSAGE="🧪 Probe PR ができたわ: ${PR_URL}（${SLUG}）"
+          jq -n --arg content "$MESSAGE" '{content: $content}' | python3 scripts/notify_bridge.py --event probe-success >/dev/null || true
           curl -sf -X POST "$DISCORD_WEBHOOK_URL" \
             -H "Content-Type: application/json" \
             -d "$(jq -n --arg content "$MESSAGE" '{content: $content}')" \
@@ -258,6 +266,7 @@ jobs:
       - name: Notify Discord (failure)
         if: failure()
         env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           SLUG: ${{ steps.payload.outputs.slug }}
         run: |
@@ -268,6 +277,7 @@ jobs:
           fi
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           MESSAGE="❌ Probe 生成失敗（${SLUG:-unknown}）: ${RUN_URL}"
+          jq -n --arg content "$MESSAGE" '{content: $content}' | python3 scripts/notify_bridge.py --category alerts --event probe-failure >/dev/null || true
           curl -sf -X POST "$DISCORD_WEBHOOK_URL" \
             -H "Content-Type: application/json" \
             -d "$(jq -n --arg content "$MESSAGE" '{content: $content}')" \
@@ -292,3 +302,13 @@ jobs:
 
           再実行する場合は \`/probe\` を再度実行してください。" \
             || echo "::warning::Failed to post issue comment"
+
+      - name: Preserve Slack shadow delivery receipts
+        if: ${{ always() && vars.NOTIFICATION_MODE == 'shadow' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: slack-delivery-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}
+          path: .notification-state/*.json
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 14

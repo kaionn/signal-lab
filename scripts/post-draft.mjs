@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import fs from "node:fs";
+import { mirrorSlack } from "./notify-slack.mjs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { parse } from "yaml";
@@ -98,6 +99,7 @@ async function sendDiscord(meta, slug, body, reply, screenshotPath) {
     : `📣 ${meta.title}（${slug}）が公開されたわ。X 投稿ドラフト↓（次のメッセージをそのままコピペ + 画像添付）`;
 
   const hasScreenshot = screenshotPath !== null && fs.existsSync(screenshotPath);
+  mirrorSlack({ content: [headerContent, body, reply].filter(Boolean).join("\n\n") }, { event: `post-draft:${slug}`, file: hasScreenshot ? screenshotPath : null });
   let headerResponse;
   if (hasScreenshot) {
     const form = new FormData();
