@@ -238,10 +238,12 @@ jobs:
           fi
           MESSAGE="🧪 Probe PR ができたわ: ${PR_URL}（${SLUG}）"
           jq -n --arg content "$MESSAGE" '{content: $content}' | python3 scripts/notify_bridge.py --event probe-success >/dev/null || true
-          curl -sf -X POST "$DISCORD_WEBHOOK_URL" \
+          if ! python3 scripts/notify_bridge.py --discord-gate; then exit 0; fi
+          DISCORD_HTTP=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$DISCORD_WEBHOOK_URL" \
             -H "Content-Type: application/json" \
-            -d "$(jq -n --arg content "$MESSAGE" '{content: $content}')" \
-            || echo "::warning::Discord notification failed"
+            -d "$(jq -n --arg content "$MESSAGE" '{content: $content}')" || true)
+          python3 scripts/notify_bridge.py --discord-ack-status "$DISCORD_HTTP"
+          if [[ ! "$DISCORD_HTTP" =~ ^2[0-9][0-9]$ ]]; then echo "::warning::Discord notification failed"; fi
 
       - name: Report success to pain-collector
         if: steps.push-pr.outputs.pr_url != ''
@@ -281,10 +283,12 @@ jobs:
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           MESSAGE="❌ Probe 生成失敗（${SLUG:-unknown}）: ${RUN_URL}"
           jq -n --arg content "$MESSAGE" '{content: $content}' | python3 scripts/notify_bridge.py --category alerts --event probe-failure >/dev/null || true
-          curl -sf -X POST "$DISCORD_WEBHOOK_URL" \
+          if ! python3 scripts/notify_bridge.py --discord-gate; then exit 0; fi
+          DISCORD_HTTP=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$DISCORD_WEBHOOK_URL" \
             -H "Content-Type: application/json" \
-            -d "$(jq -n --arg content "$MESSAGE" '{content: $content}')" \
-            || echo "::warning::Discord notification failed"
+            -d "$(jq -n --arg content "$MESSAGE" '{content: $content}')" || true)
+          python3 scripts/notify_bridge.py --discord-ack-status "$DISCORD_HTTP"
+          if [[ ! "$DISCORD_HTTP" =~ ^2[0-9][0-9]$ ]]; then echo "::warning::Discord notification failed"; fi
 
       - name: Report failure to pain-collector
         if: failure()
@@ -307,7 +311,7 @@ jobs:
             || echo "::warning::Failed to post issue comment"
 
       - name: Preserve notification delivery receipts and sanitized recovery outbox
-        if: ${{ always() && vars.NOTIFICATION_MODE == 'shadow' }}
+        if: ${{ always() && (vars.NOTIFICATION_MODE == 'shadow' || vars.NOTIFICATION_MODE == 'slack') }}
         uses: actions/upload-artifact@v4
         with:
           name: slack-delivery-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}
@@ -317,3 +321,7 @@ jobs:
           include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 90
+
+      - name: Audit primary notification completion after business work
+        if: ${{ always() && vars.NOTIFICATION_MODE == 'slack' }}
+        run: python3 scripts/notify_bridge.py --audit
