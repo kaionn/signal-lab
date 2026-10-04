@@ -1,5 +1,7 @@
 # signal-lab
 
+> 新しい推奨導線: [証拠 → 承認済みローカル試作 → review → 配布・計測](docs/opportunity-workflow.md)。以下の自動生成/Issue操作は既存の互換経路で、生成件数やActions成功は製品成果を意味しません。
+
 検証ファースト開発の実験場 — 小さく作って、市場に聞く
 
 公開URL: https://signal-lab-six.vercel.app
@@ -43,10 +45,10 @@ WATCH    → 継続観察
 |---|---|
 | GRADUATE（Probe B） | 累計待機リスト登録数 10 件以上 |
 | GRADUATE（Probe A） | 直近7日のtool_useイベント20回以上、または再訪ユニークユーザー5人以上（PostHog利用可能時のみ） |
-| KILL | 公開から21日以上経過 かつ シグナル（登録+tool_use）が2未満 |
+| KILL | 初回配布から21日以上経過、pageviewが最小露出数以上、主要シグナルが計測済みかつ2未満（A=直近7日tool_use、B=累計登録） |
 | WATCH | 上記いずれにも該当しない |
 
-集客していないProbeはKILL判定しない。公開後に出典コミュニティへ投げ返し、`meta.yaml`の`distribution`に記録していない実験は、経過日数・シグナル数によらずKILL対象外とする。
+集客していないProbeはKILL判定しない。公開後に出典コミュニティへ投げ返し、`meta.yaml`の`distribution`に記録していない実験は、経過日数・シグナル数によらずKILL対象外とする。計測不明や露出不足もWATCH理由として明示する。
 
 ## 技術スタック
 

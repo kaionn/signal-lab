@@ -2,6 +2,7 @@
 import fs from "node:fs";
 import { mirrorSlack } from "./notify-slack.mjs";
 import path from "node:path";
+import { judge } from "./verdict.mjs";
 import { execFileSync } from "node:child_process";
 import { parse } from "yaml";
 
@@ -9,7 +10,6 @@ const ROOT = process.cwd();
 const EXPERIMENTS_DIR = path.join(ROOT, "experiments");
 const RULES_PATH = path.join(ROOT, "config", "verdict-rules.yaml");
 const DRY_RUN = process.argv.includes("--dry-run");
-const DAY_MS = 24 * 60 * 60 * 1000;
 const GH_REPO = "kaionn/signal-lab";
 
 const warnings = [];
@@ -67,7 +67,8 @@ async function fetchWaitlistCounts(slugs) {
         throw new Error(`status=${response.status}`);
       }
       const body = await response.json();
-      counts.set(slug, typeof body.result === "number" ? body.result : 0);
+      if (!Number.isInteger(body.result) || body.result < 0) throw new Error("invalid waitlist count");
+      counts.set(slug, body.result);
     } catch (error) {
       warnings.push(`待機リスト取得失敗 (${slug}): ${error.message}`);
     }
@@ -123,6 +124,7 @@ async function fetchPostHogStats(slugs) {
        group by slug, event`,
     );
 
+    if (!Array.isArray(json.results)) throw new Error("invalid PostHog result");
     for (const slug of slugs) {
       eventCounts.set(slug, emptyEventCounts());
     }
@@ -131,11 +133,13 @@ async function fetchPostHogStats(slugs) {
       if (!eventCounts.has(slug)) {
         continue;
       }
+      if (!Number.isInteger(Number(cnt)) || Number(cnt)<0) throw new Error("invalid event count");
       const key = event === "$pageview" ? "pageview" : event;
       const entry = eventCounts.get(slug);
       entry[key] = (entry[key] ?? 0) + Number(cnt);
     }
   } catch (error) {
+    for (const slug of slugs) eventCounts.set(slug, null);
     warnings.push(`PostHog イベント集計取得失敗: ${error.message}`);
     return { eventCounts, returningUsers, available: false };
   }
@@ -146,17 +150,19 @@ async function fetchPostHogStats(slugs) {
       projectId,
       `select slug, count() as returning_count
        from (
-         select ${SLUG_FROM_PATH} as slug, distinct_id, count() as events_count
+         select ${SLUG_FROM_PATH} as slug, distinct_id, count(distinct toDate(timestamp)) as active_days
          from events
          where timestamp > now() - interval 7 day
            and event in ('$pageview', 'cta_click', 'signup', 'tool_use')
          group by slug, distinct_id
-         having events_count >= 2
+         having active_days >= 2
        )
        group by slug`,
     );
 
-    for (const [slug, cnt] of json.results ?? []) {
+    if (!Array.isArray(json.results)) throw new Error("invalid returning-user result");
+    for (const [slug, cnt] of json.results) {
+      if (!Number.isInteger(Number(cnt)) || Number(cnt)<0) throw new Error("invalid returning-user count");
       returningUsers.set(slug, Number(cnt));
     }
   } catch (error) {
@@ -164,58 +170,6 @@ async function fetchPostHogStats(slugs) {
   }
 
   return { eventCounts, returningUsers, available: true };
-}
-
-function daysSince(date) {
-  const days = Math.floor((Date.now() - new Date(date).getTime()) / DAY_MS);
-  return Number.isFinite(days) ? days : null;
-}
-
-// 集客（distribution）の初回日。KILL の観測期間はここを起点にする。
-// created 起点にすると、公開から集客までの遅れがそのまま観測期間を食い、
-// 投げ返した翌日に KILL が出るため。
-function firstDistributionDay(meta) {
-  const dates = (meta.distribution ?? []).map((entry) => entry?.date).filter(Boolean);
-  if (dates.length === 0) {
-    return null;
-  }
-  return daysSince([...dates].sort()[0]);
-}
-
-function judge(meta, rules, waitlistCount, events, returningUsers, postHogAvailable) {
-  const ageDays = daysSince(meta.created);
-  const distributedDays = firstDistributionDay(meta);
-  const observedDays = distributedDays ?? ageDays;
-  const distributed = (meta.distribution ?? []).length > 0;
-  const weeklyToolUse = events?.tool_use ?? 0;
-  const signals = (waitlistCount ?? 0) + weeklyToolUse;
-
-  const graduatedB =
-    meta.probe_type === "B" && waitlistCount !== null && waitlistCount >= rules.graduate.probe_b_signups;
-  const graduatedA =
-    meta.probe_type === "A" &&
-    (weeklyToolUse >= rules.graduate.probe_a_weekly_tool_use ||
-      (postHogAvailable &&
-        returningUsers !== null &&
-        returningUsers >= rules.graduate.probe_a_returning_users));
-
-  let verdict = "WATCH";
-  if (graduatedB || graduatedA) {
-    verdict = "GRADUATE";
-  } else if (
-    (!rules.kill.requires_distribution || distributed) &&
-    observedDays !== null &&
-    observedDays >= rules.kill.min_age_days &&
-    signals < rules.kill.max_signals
-  ) {
-    verdict = "KILL";
-  }
-
-  if (ageDays === null) {
-    warnings.push(`created が日付として解釈できません (${meta.slug}): ${meta.created}`);
-  }
-
-  return { verdict, ageDays, observedDays, distributed, weeklyToolUse, signals };
 }
 
 const VERDICT_EMOJI = { GRADUATE: "🎓", KILL: "💀", WATCH: "👀" };
@@ -238,6 +192,7 @@ function buildField(meta, judgement, waitlistCount, events, postHogAvailable) {
     lines.push("⚠️ 未集客");
   }
 
+  lines.push(`判定理由: ${judgement.reason}`);
   return {
     name: `${meta.title} (${meta.slug}) [${meta.probe_type}]`,
     value: lines.join("\n"),

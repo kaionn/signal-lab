@@ -12,3 +12,7 @@ price_hypothesis: "月額300円"
 cta: waitlist          # waitlist / preorder / pro_interest
 distribution: []       # 集客アクション実施ログ。空のままだと週次ダイジェストで「未集客」警告
 verdict_log: []
+
+# 新経路では契約idを記録。draftでlocal previewし、公開承認後にliveへ。
+# contract_id: my-probe
+minimum_exposures: 20 # 露出不足/計測不明はKILLにしない

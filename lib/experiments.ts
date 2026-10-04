@@ -31,6 +31,8 @@ export const ExperimentMetaSchema = z.object({
   price_hypothesis: z.string().optional(),
   cta: z.enum(["waitlist", "preorder", "pro_interest"]),
   distribution: z.array(DistributionEntrySchema).default([]),
+  contract_id: z.string().regex(SLUG_REGEX).optional(),
+  minimum_exposures: z.number().int().positive().default(20),
   verdict_log: z.array(z.record(z.string(), z.unknown())).default([]),
 });
 

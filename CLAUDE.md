@@ -40,3 +40,7 @@ pain-collector の Issue から `/probe` コマンドでも自動生成される
 | POSTHOG_API_KEY / POSTHOG_PROJECT_ID（GitHub Secrets、週次ダイジェスト用） | PostHog Query API での行動イベント集計 | 「計測: 未接続」警告を出して続行 |
 
 pain-collector 側の PAT（fine-grained）が signal-lab の workflow（probe-request.yml）を dispatch する構成のため、その PAT には `Actions: Read and write` + Repository access に signal-lab を含める。**PAT ローテート時に signal-lab を対象から外すと `/probe` 連携が落ちる**（pain-collector 側だけ更新して壊れやすい）。
+
+## 証拠から試作への新導線
+
+[docs/opportunity-workflow.md](docs/opportunity-workflow.md) を読む。新しいcontractを正とし、tool/LPを分け、user build承認→test/preview→user release承認を維持する。旧/approveは廃止。/probeはLP生成の互換経路で新contractとは別。main mergeが公開に繋がるため、ローカル試作の許可を公開許可に拡張しない。
