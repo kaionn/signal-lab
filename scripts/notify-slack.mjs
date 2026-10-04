@@ -19,16 +19,9 @@ export function mirrorSlack(payload, { category = "reports", event = "notificati
 }
 
 export function shouldSendDiscord(result) {
-  if (process.env.NOTIFICATION_MODE !== "slack") return true;
-  try {
-    execFileSync("python3", [bridgePath, "--discord-gate", "--discord-result", JSON.stringify(result ?? { status: "adapter_failed" })], { stdio: ["ignore", "ignore", "inherit"], timeout: 60000 });
-    return true;
-  } catch { return false; }
+  return ["discord", "shadow"].includes(process.env.NOTIFICATION_MODE ?? "discord");
 }
 
 export function acknowledgeDiscord(status, result) {
-  if (process.env.NOTIFICATION_MODE !== "slack") return;
-  try {
-    execFileSync("python3", [bridgePath, "--discord-ack-status", String(status), "--discord-result", JSON.stringify(result ?? { status: "adapter_failed" })], { stdio: ["ignore", "ignore", "inherit"], timeout: 60000 });
-  } catch { console.error("Discord fallback receipt unconfirmed; reconcile manually."); }
+  // Slack-only never posts or acknowledges Discord. Legacy rollback remains intact.
 }

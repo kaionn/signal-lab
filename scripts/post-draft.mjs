@@ -89,7 +89,7 @@ function generateDraft(meta, lpUrl) {
 
 async function sendDiscord(meta, slug, body, reply, screenshotPath) {
   const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
-  if (!webhookUrl) {
+  if (!webhookUrl && process.env.NOTIFICATION_MODE !== "slack") {
     console.error("DISCORD_WEBHOOK_URL が未設定");
     process.exit(1);
   }

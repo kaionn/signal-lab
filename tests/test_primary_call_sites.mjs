@@ -23,3 +23,16 @@ let fetches=0, acknowledgements=0;
 await assert.rejects(draft({title:"synthetic"}, "test", "body", "reply", null, () => {}, () => true, () => acknowledgements++, async () => {fetches++;return {ok:fetches===1,status:fetches===1?204:503};}, fs, path, callback => callback()));
 assert.equal(fetches,2);assert.equal(acknowledgements,0);
 console.log("Primary Node call-site checks: success suppression, full fallback acknowledgement, partial fallback unconfirmed passed");
+
+process.env.NOTIFICATION_MODE = "slack";
+delete process.env.DISCORD_WEBHOOK_URL;
+const { shouldSendDiscord: realGate } = await import("../scripts/notify-slack.mjs");
+for (const status of ["sent", "known_rejected", "needs_reconciliation"]) {
+  let fetches=0, mirrored=0;
+  const mirror = () => {mirrored++;return {status};};
+  const forbiddenFetch = async () => {fetches++;throw new Error("Discord forbidden");};
+  await draft({title:"synthetic"}, "test", "body", "reply", null, mirror, realGate, () => {throw new Error("Discord acknowledgement forbidden");}, forbiddenFetch, fs, path, callback => callback());
+  await weekly({title:"synthetic"}, mirror, realGate, () => {throw new Error("Discord acknowledgement forbidden");}, forbiddenFetch, fs, path, callback => callback());
+  assert.equal(mirrored,2);assert.equal(fetches,0);
+}
+console.log("Slack-only actual Node gate: success/rejection/unknown all suppress Discord without its secret.");
