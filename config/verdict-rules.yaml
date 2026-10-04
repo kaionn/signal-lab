@@ -4,6 +4,6 @@ graduate:
   probe_a_weekly_tool_use: 20 # Probe A: 直近 7 日の tool_use イベント数
   probe_a_returning_users: 5  # Probe A: 直近 7 日の再訪ユニークユーザー数（PostHog 利用可能時のみ）
 kill:
-  min_age_days: 21           # 公開からの経過日数
-  max_signals: 2             # これ未満のシグナル（登録 + tool_use）なら KILL 勧告
+  min_age_days: 21           # 初回配布からの観測日数
+  max_signals: 2             # 型別主要シグナル（A=直近7日tool_use / B=累計登録）。計測済み・十分な露出の場合のみKILL勧告
   requires_distribution: true # 集客未実施の実験は KILL 対象外
