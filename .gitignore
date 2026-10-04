@@ -49,3 +49,5 @@ next-env.d.ts
 
 # Ephemeral Slack shadow receipts (uploaded separately by Actions)
 .notification-state/
+
+.notification-outbox/
