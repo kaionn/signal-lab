@@ -7,7 +7,7 @@ on:
         required: true
         default: storage
         type: choice
-        options: [storage, seed, replay, primary-replay]
+        options: [storage, seed, replay, primary-replay, slack-only-seed, slack-only-replay]
 permissions:
   contents: read
 concurrency:
