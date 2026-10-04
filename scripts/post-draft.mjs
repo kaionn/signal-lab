@@ -99,8 +99,8 @@ async function sendDiscord(meta, slug, body, reply, screenshotPath) {
     : `📣 ${meta.title}（${slug}）が公開されたわ。X 投稿ドラフト↓（次のメッセージをそのままコピペ + 画像添付）`;
 
   const hasScreenshot = screenshotPath !== null && fs.existsSync(screenshotPath);
-  mirrorSlack({ content: [headerContent, body, reply].filter(Boolean).join("\n\n") }, { event: `post-draft:${slug}`, file: hasScreenshot ? screenshotPath : null });
-  if (!shouldSendDiscord()) return;
+  const slackResult = mirrorSlack({ content: [headerContent, body, reply].filter(Boolean).join("\n\n") }, { event: `post-draft:${slug}`, file: hasScreenshot ? screenshotPath : null });
+  if (!shouldSendDiscord(slackResult)) return;
   let headerResponse;
   if (hasScreenshot) {
     const form = new FormData();
@@ -140,7 +140,7 @@ async function sendDiscord(meta, slug, body, reply, screenshotPath) {
       throw new Error(`discord webhook failed (reply): status=${replyResponse.status}`);
     }
   }
-  acknowledgeDiscord(bodyResponse.status);
+  acknowledgeDiscord(bodyResponse.status, slackResult);
 }
 
 async function main() {

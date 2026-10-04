@@ -221,8 +221,8 @@ function buildEmbed(experiments, judgements, rules) {
 }
 
 async function sendToDiscord(embed) {
-  mirrorSlack({ embeds: [embed] }, { event: "weekly-digest" });
-  if (!shouldSendDiscord()) return;
+  const slackResult = mirrorSlack({ embeds: [embed] }, { event: "weekly-digest" });
+  if (!shouldSendDiscord(slackResult)) return;
   const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
   if (!webhookUrl) {
     throw new Error("DISCORD_WEBHOOK_URL が未設定");
@@ -234,7 +234,7 @@ async function sendToDiscord(embed) {
     body: JSON.stringify({ embeds: [embed] }),
   });
 
-  acknowledgeDiscord(response.status);
+  acknowledgeDiscord(response.status, slackResult);
   if (!response.ok) {
     throw new Error(`discord webhook failed: status=${response.status}`);
   }
