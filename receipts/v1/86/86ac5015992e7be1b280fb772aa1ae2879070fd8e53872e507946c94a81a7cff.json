@@ -1,1 +1,1 @@
-{"event": "storage-probe-v1", "key": "86ac5015992e7be1b280fb772aa1ae2879070fd8e53872e507946c94a81a7cff", "parts": [], "repo": "kaionn/signal-lab", "schema": 1, "stage": "reserved", "status": "probe"}
+{"event": "storage-probe-v1", "key": "86ac5015992e7be1b280fb772aa1ae2879070fd8e53872e507946c94a81a7cff", "parts": [], "repo": "kaionn/signal-lab", "schema": 1, "stage": "complete", "status": "storage_verified"}
