@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { track } from "@/lib/track";
+import { todayISO, addDaysISO } from "@/lib/calendar-date";
 
 const SLUG = "mitsumori";
 const STORAGE_KEY = "mitsumori:estimate:v1";
@@ -45,16 +46,6 @@ function calculateTotals(items: LineItem[], taxRatePercent: number): EstimateTot
 
 function formatYen(amount: number): string {
   return `${new Intl.NumberFormat("ja-JP").format(amount)}円`;
-}
-
-function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function addDaysISO(baseISO: string, days: number): string {
-  const date = new Date(`${baseISO}T00:00:00`);
-  date.setDate(date.getDate() + days);
-  return date.toISOString().slice(0, 10);
 }
 
 function generateEstimateNumber(baseISO: string): string {
@@ -171,6 +162,10 @@ export function EstimateTool() {
   function handlePrint() {
     track("tool_use", SLUG, { action: "print" });
     window.print();
+  }
+
+  if (!hydrated) {
+    return <div role="status">見積書を読み込んでいます…</div>;
   }
 
   return (
