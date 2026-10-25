@@ -1,1 +1,1 @@
-{"channel": "C0C6GSL6H7Z", "event": "weekly-digest", "key": "dd3131e7bff3eac62ee2730c32dd2ed25fd84d6b900ac8622797fc11fbcb9949", "mode": "slack", "parts": [], "repo": "kaionn/signal-lab", "run_attempt": "1", "run_id": "40203164764", "schema": 1, "stage": "reserved", "status": "sending"}
+{"channel": "C0C6GSL6H7Z", "event": "weekly-digest", "key": "dd3131e7bff3eac62ee2730c32dd2ed25fd84d6b900ac8622797fc11fbcb9949", "mode": "slack", "parts": [], "repo": "kaionn/signal-lab", "run_attempt": "1", "run_id": "40203164764", "schema": 1, "stage": "text:0", "status": "sending"}
